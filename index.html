@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Matrix Overdrive: Balance Protocol</title>
+<style>
+body {
+background-color: #03050c;
+color: #00f0ff;
+font-family: 'Courier New', monospace;
+text-align: center;
+margin: 0;
+padding: 20px;
+user-select: none;
+}
+.container {
+max-width: 500px;
+background-color: #0c101b;
+border: 2px solid #00f0ff;
+border-radius: 12px;
+padding: 20px;
+display: inline-block;
+box-shadow: 0px 0px 35px rgba(0, 240, 255, 0.35);
+}
+.stats-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 10px;
+}
+.stat-box {
+background-color: #121622;
+padding: 10px;
+border-radius: 6px;
+border: 1px solid #1e2638;
+font-weight: bold;
+}
+#game-arena {
+width: 320px;
+height: 420px;
+background-color: #010204;
+border: 2px solid #1e2638;
+margin: 15px auto;
+position: relative;
+overflow: hidden;
+border-radius: 8px;
+transition: background-color 0.4s;
+}
+#player {
+width: 34px;
+height: 34px;
+background-color: #00ff66;
+position: absolute;
+bottom: 15px;
+left: 144px;
+border-radius: 6px;
+box-shadow: 0 0 15px #00ff66;
+transition: left 0.06s linear, width 0.2s, background-color 0.2s;
+font-size: 11px;
+color: black;
+font-weight: bold;
+line-height: 34px;
+}
+.ball {
+width: 20px;
+height: 20px;
+position: absolute;
+border-radius: 50px;
+}
+.red-hazard {
+background-color: #ff3333;
+box-shadow: 0 0 12px #ff3333;
+}
+#yellow-ball {
+background-color: #ffcc00;
+box-shadow: 0 0 15px #ffcc00;
+}
+#blue-bonus {
+background-color: #0077ff;
+box-shadow: 0 0 20px #0077ff;
+display: none;
+}
+.controls {
+margin-top: 15px;
+}
+.btn {
+background-color: #00f0ff;
+color: #03050c;
+border: none;
+padding: 15px 35px;
+font-size: 18px;
+font-weight: bold;
+border-radius: 8px;
+cursor: pointer;
+margin: 0 10px;
+box-shadow: 0 4px 12px rgba(0, 240, 255, 0.3);
+}
+.btn:active { transform: scale(0.95); }
+#restart-btn {
+background-color: #ff3333;
+color: white;
+display: none;
+margin: 15px auto 0 auto;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1 style="color: #00ff66; text-shadow: 0 0 15px rgba(0,255,102,0.4); letter-spacing: 2px;">⚡ BALANCED_MATRIX ⚡</h1>
+
+<div class="stats-grid">
+<div class="stat-box">SCORE: <span id="score-val">0</span></div>
+<div class="stat-box" style="color: #ffcc00;">BEST: <span id="high-val">0</span></div>
+</div>
+<div class="stat-box" style="color: #00f0ff;" id="speed-box">OVERDRIVE MULTIPLIER: <span id="level-val">1.0</span>x</div>
+
+<div id="game-arena">
+<div id="player">SYS</div>
+
+<div id="red1" class="ball red-hazard"></div>
+<div id="red2" class="ball red-hazard"></div>
+<div id="red3" class="ball red-hazard"></div>
+
+<div id="yellow-ball" class="ball"></div>
+
+<div id="blue-bonus" class="ball"></div>
+</div>
+
+<div class="controls">
+<button class="btn" onclick="moveLeft()">◀ LEFT</button>
+<button class="btn" onclick="moveRight()">RIGHT ▶</button>
+</div>
+
+<button id="restart-btn" class="btn" onclick="resetGame()">SYSTEM REBOOT</button>
+</div>
+
+<script>
+let playerX = 144;
+let score = 0;
+let isGameOver = false;
+let speedMultiplier = 1.0;
+
+let balls = [
+{ id: "red1", x: 40, y: 10, sx: 2.0, sy: 2.8, type: "hazard" },
+{ id: "red2", x: 140, y: 70, sx: -2.5, sy: 2.2, type: "hazard" },
+{ id: "red3", x: 240, y: 130, sx: 1.8, sy: 3.2, type: "hazard" },
+{ id: "yellow-ball", x: 100, y: 200, sx: -3.2, sy: -2.8, type: "yellow" },
+{ id: "blue-bonus", x: -50, y: -50, sx: 0, sy: 0, type: "blue", active: false }
+];
+
+const playerElement = document.getElementById("player");
+const scoreElement = document.getElementById("score-val");
+const highElement = document.getElementById("high-val");
+const levelElement = document.getElementById("level-val");
+const arena = document.getElementById("game-arena");
+const restartButton = document.getElementById("restart-btn");
+const blueElement = document.getElementById("blue-bonus");
+
+let savedHighScore = localStorage.getItem("cyberQuantumHigh") || 0;
+highElement.innerText = savedHighScore;
+
+function moveLeft() {
+if (isGameOver) return;
+if (playerX > 20) { playerX -= 62; playerElement.style.left = playerX + "px"; }
+}
+
+function moveRight() {
+if (isGameOver) return;
+if (playerX < 260) { playerX += 62; playerElement.style.left = playerX + "px"; }
+}
+
+window.addEventListener("keydown", (e) => {
+if (e.key === "ArrowLeft") moveLeft();
+if (e.key === "ArrowRight") moveRight();
+});
+
+const gameLoop = setInterval(() => {
+if (isGameOver) return;
+
+levelElement.innerText = speedMultiplier.toFixed(2);
+
+if (speedMultiplier >= 1.5) arena.style.backgroundColor = "#0d0205";
+if (speedMultiplier >= 2.0) {
+arena.style.backgroundColor = "#240108";
+document.getElementById("speed-box").style.color = "#ff0055";
+}
+
+let blueBall = balls;
+if (!blueBall.active && Math.random() < 0.008) {
+blueBall.active = true;
+blueBall.x = Math.floor(Math.random() * 260) + 20;
+blueBall.y = 10;
+blueBall.sx = Math.random() > 0.5 ? 2.5 : -2.5;
+blueBall.sy = 2.8;
+blueElement.style.display = "block";
+}
+
+balls.forEach(ball => {
+if (ball.type === "blue" && !ball.active) return;
+
+ball.x += ball.sx * speedMultiplier;
+ball.y += ball.sy * speedMultiplier;
+
+if (ball.x <= 5 || ball.x >= 295) {
+ball.sx = -ball.sx;
+ball.x = ball.x <= 5 ? 6 : 294;
+}
+
+if (ball.y <= 5 || ball.y >= 395) {
+if (ball.type === "hazard") {
+ball.y = 5;
+ball.x = Math.floor(Math.random() * 260) + 20;
+ball.sx = (Math.random() * 4 - 2);
+score += 1;
+scoreElement.innerText = score;
+} else if (ball.type === "yellow") {
+ball.sy = -ball.sy;
+ball.y = ball.y <= 5 ? 6 : 394;
+} else if (ball.type === "blue") {
+ball.active = false;
+blueElement.style.display = "none";
+}
+}
+
+let el = document.getElementById(ball.id);
+if (el) {
+el.style.left = ball.x + "px";
+el.style.top = ball.y + "px";
+}
+
+if (ball.y > 360 && ball.y < 400 && Math.abs(ball.x - playerX) < 24) {
+if (ball.type === "hazard" || ball.type === "yellow") {
+isGameOver = true;
+clearInterval(gameLoop);
+
+arena.style.backgroundColor = "#550000";
+playerElement.style.backgroundColor = "#ff3333";
+playerElement.style.width = "240px";
+playerElement.style.left = "40px";
+playerElement.style.boxShadow = "0 0 35px #ff3333";
+playerElement.innerText = "💥 DATA_MATRIX_WIPED";
+
+if (score > savedHighScore) {
+localStorage.setItem("cyberQuantumHigh", score);
+}
+restartButton.style.display = "block";
+} else if (ball.type === "blue" && ball.active) {
+score += 15;
+scoreElement.innerText = score;
+ball.active = false;
+blueElement.style.display = "none";
+
+speedMultiplier += 0.15;
+
+playerElement.style.backgroundColor = "#ffffff";
+playerElement.style.boxShadow = "0 0 25px #ffffff";
+setTimeout(() => {
+if(!isGameOver) {
+playerElement.style.backgroundColor = "#00ff66";
+playerElement.style.boxShadow = "0 0 15px #00ff66";
+}
+}, 120);
+}
+}
+});
+
+}, 25);
+
+function resetGame() { window.location.reload(); }
+</script>
+</body>
+</html>
